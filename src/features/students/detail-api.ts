@@ -6,7 +6,7 @@ import type { Student } from "./types"
 export function useStudentById(id: string | undefined) {
   return useQuery({
     queryKey: ["students"],
-    queryFn: () => apiFetch<{ data: Student[] }>("/get_students.php").then((r) => r.data),
+    queryFn: () => apiFetch<{ data: Student[] }>("/get_students.php?all=1").then((r) => r.data),
     select: (all) => all.find((s) => s.id === Number(id)),
     enabled: id != null && id !== "",
   })

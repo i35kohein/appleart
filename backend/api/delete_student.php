@@ -30,7 +30,12 @@ if(!empty($id)) {
         $conn->prepare("DELETE FROM student_exams WHERE student_id=?")->execute([$id]); 
         
         // 2. Delete the actual student
+        $conn->beginTransaction();
+        foreach (['student_payments', 'practical_history', 'real_world_repairs', 'rollcall_logs', 'student_progress', 'progress_history', 'student_exams'] as $t) {
+            $conn->prepare("DELETE FROM $t WHERE student_id = ?")->execute([$id]);
+        }
         $conn->prepare("DELETE FROM students WHERE id=?")->execute([$id]);
+        $conn->commit();
         
         $conn->commit();
         echo json_encode(['status' => 'success']);

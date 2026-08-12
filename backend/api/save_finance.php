@@ -46,7 +46,7 @@ try {
     switch ($type) {
         case 'assets':
             $name = trim($_POST['name'] ?? '');
-            $value = intval($_POST['value_amount'] ?? 0);
+            $value = max(0, intval($_POST['value_amount'] ?? 0));
             $note = mb_substr(trim($_POST['note'] ?? ''), 0, 255);
             if ($name === '') { echo json_encode(['status' => 'error', 'message' => 'Name required']); exit; }
             $stmt = $conn->prepare("INSERT INTO $table (name, value_amount, entry_date, note) VALUES (:a, :b, :c, :d)");
@@ -54,7 +54,7 @@ try {
             break;
         case 'expenses':
             $title = trim($_POST['title'] ?? '');
-            $amount = intval($_POST['amount'] ?? 0);
+            $amount = max(0, intval($_POST['amount'] ?? 0));
             $category = mb_substr(trim($_POST['category'] ?? ''), 0, 100);
             $note = mb_substr(trim($_POST['note'] ?? ''), 0, 255);
             if ($title === '') { echo json_encode(['status' => 'error', 'message' => 'Title required']); exit; }
@@ -63,14 +63,14 @@ try {
             break;
         case 'shares':
             $partner = trim($_POST['partner_name'] ?? '');
-            $percent = floatval($_POST['share_percent'] ?? 0);
+            $percent = max(0, min(100, floatval($_POST['share_percent'] ?? 0)));
             $note = mb_substr(trim($_POST['note'] ?? ''), 0, 255);
             if ($partner === '') { echo json_encode(['status' => 'error', 'message' => 'Partner name required']); exit; }
             $stmt = $conn->prepare("INSERT INTO $table (partner_name, share_percent, note) VALUES (:a, :b, :c)");
             $stmt->execute(['a' => $partner, 'b' => $percent, 'c' => $note]);
             break;
         case 'money_out':
-            $amount = intval($_POST['amount'] ?? 0);
+            $amount = max(0, intval($_POST['amount'] ?? 0));
             $reason = mb_substr(trim($_POST['reason'] ?? ''), 0, 150);
             $note = mb_substr(trim($_POST['note'] ?? ''), 0, 255);
             $stmt = $conn->prepare("INSERT INTO $table (amount, out_date, reason, note) VALUES (:a, :b, :c, :d)");

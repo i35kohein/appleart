@@ -13,7 +13,7 @@ function base32_encode_bin(string $bin): string
         $chunk = substr($bits, $i, 5);
         $out .= $alphabet[bindec(str_pad($chunk, 5, '0'))];
     }
-    return rtrim($out, 'A');
+    return $out; // 20 bytes = exactly 32 base32 chars — no padding to strip
 }
 
 function totp_secret_generate(): string

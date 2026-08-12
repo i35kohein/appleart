@@ -13,7 +13,7 @@ if (!empty($item_id)) {
             SELECT s.id, s.name, s.phone, s.shop_name, sp.completion_date, sp.trainer_name
             FROM student_progress sp
             JOIN students s ON sp.student_id = s.id
-            WHERE sp.item_id = :item_id AND sp.status = 'Completed'
+            WHERE sp.item_id = :item_id AND sp.status = 'Completed' AND sp.detail_idx IS NULL
             ORDER BY s.name ASC
         ");
         $stmt->execute(['item_id' => $item_id]);

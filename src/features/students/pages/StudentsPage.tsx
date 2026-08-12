@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -79,6 +79,11 @@ function StudentDialog({
   })
 
   const isActive = watch("is_active")
+
+  // Re-apply form values whenever the edited student changes (dialog stays mounted).
+  useEffect(() => {
+    reset(emptyForm(student ?? undefined))
+  }, [student, reset])
 
   const onSubmit = (values: StudentFormValues) => {
     const input: StudentInput = {

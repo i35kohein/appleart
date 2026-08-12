@@ -149,7 +149,9 @@ export function WatermarkViewer({ student, material, onClose }: { student: Porta
     }
   }, [doc, page, scale])
 
-  const next = useCallback(() => setPage((p) => Math.min(pages, p + 1)), [pages])
+  const next = useCallback(() => {
+    if (pages > 0) setPage((p) => Math.min(pages, p + 1))
+  }, [pages])
 
   const jumpToOutline = useCallback(
     async (dest: unknown) => {
@@ -186,7 +188,9 @@ export function WatermarkViewer({ student, material, onClose }: { student: Porta
         {Array.isArray(it.items) && it.items.length > 0 ? renderOutline(it.items, depth + 1) : null}
       </div>
     ))
-  const prev = useCallback(() => setPage((p) => Math.max(1, p - 1)), [])
+  const prev = useCallback(() => {
+    if (pages > 0) setPage((p) => Math.max(1, p - 1))
+  }, [pages])
 
   return (
     <div

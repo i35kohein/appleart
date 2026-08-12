@@ -2,6 +2,12 @@
 // Shared brute-force guard helpers for student auth endpoints.
 
 function client_ip(): string {
+    // Behind a reverse proxy (Caddy), use the real client IP from X-Forwarded-For.
+    $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($fwd !== '') {
+        $first = trim(explode(',', $fwd)[0]);
+        if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
+    }
     return $_SERVER['REMOTE_ADDR'] ?? '';
 }
 

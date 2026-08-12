@@ -5,10 +5,11 @@ header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $student_id = $_POST['student_id'] ?? '';
 
-    // Student portal: a logged-in student may only update their OWN progress.
-    // Admins (user session) are exempt — they manage every student.
-    if (empty($_SESSION['user_id']) && !empty($_SESSION['student_id']) && intval($student_id) !== intval($_SESSION['student_id'])) {
-        echo json_encode(["status" => "error", "message" => "You can only update your own progress."]);
+    // Authz: admins may manage everyone; a logged-in student only their OWN progress;
+    // anonymous callers are blocked entirely.
+    if (empty($_SESSION['user_id']) && (empty($_SESSION['student_id']) || intval($student_id) !== intval($_SESSION['student_id']))) {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Not allowed"]);
         exit;
     }
     $item_id = $_POST['item_id'] ?? '';

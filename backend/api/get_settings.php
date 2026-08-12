@@ -53,7 +53,12 @@ try {
         $settings['rollcall_schedules'] = $defaults['rollcall_schedules'];
         $settings['rollcall_schedules']['Weekday'] = $settings['rollcall_schedule'];
     }
-    echo json_encode(['status' => 'success', 'data' => $settings]);
+    // Only admin/master_admin may read the AI API key.
+$role = $_SESSION['user_role'] ?? '';
+if ($role !== 'admin' && $role !== 'master_admin') {
+    unset($settings['ai_api_key']);
+}
+echo json_encode(['status' => 'success', 'data' => $settings]);
 } catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage(), 'data' => $defaults]);
 }

@@ -28,7 +28,7 @@ try {
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT id, name, email, phone, password FROM students WHERE LOWER(email) = :email LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, name, email, phone, password, is_active FROM students WHERE LOWER(email) = :email LIMIT 1");
     $stmt->execute(['email' => $email]);
     $student = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -39,6 +39,10 @@ try {
         exit;
     }
 
+    if (intval($student['is_active']) !== 1) {
+        echo json_encode(['status' => 'error', 'message' => 'Account is disabled — contact the academy']);
+        exit;
+    }
     auth_success($conn, $email, $ip, 'login');
     session_regenerate_id(true); // prevent session fixation
     $_SESSION['student_id'] = intval($student['id']);

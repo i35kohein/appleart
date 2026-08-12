@@ -74,7 +74,7 @@ function SignupView({ onLogin }: { onLogin: () => void }) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !email.trim() || password.length < 6) return
+    if (!name.trim() || !email.trim() || password.length < 8) return
     signup.mutate({ name: name.trim(), email: email.trim(), phone: phone.trim(), password })
   }
 
@@ -102,11 +102,11 @@ function SignupView({ onLogin }: { onLogin: () => void }) {
             <Input id="su-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09xxxxxxxxx" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="su-pass">Password (min 6)</Label>
+            <Label htmlFor="su-pass">Password (min 8 — letters + numbers)</Label>
             <Input id="su-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
           </div>
           {signup.isError && <p className="text-xs font-medium text-destructive">{signup.error.message}</p>}
-          <Button type="submit" className="w-full rounded-full bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200" disabled={signup.isPending || !name.trim() || !email.trim() || password.length < 6}>
+          <Button type="submit" className="w-full rounded-full bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200" disabled={signup.isPending || !name.trim() || !email.trim() || password.length < 8}>
             {signup.isPending ? <Loader2 className="size-4 animate-spin" /> : "Create account"}
           </Button>
         </form>
@@ -266,7 +266,7 @@ function SettingsView({ student }: { student: PortalStudentLike }) {
                 <Input id="st-current" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoFocus />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="st-new">New password (min 6)</Label>
+                <Label htmlFor="st-new">New password (min 8 — letters + numbers)</Label>
                 <Input id="st-new" type="password" value={next} onChange={(e) => setNext(e.target.value)} />
               </div>
               <div className="space-y-1.5">
@@ -277,7 +277,7 @@ function SettingsView({ student }: { student: PortalStudentLike }) {
               {change.isError && <p className="text-xs font-medium text-destructive">{change.error.message}</p>}
               {done && <p className="text-xs font-semibold text-emerald-600">Password changed ✓</p>}
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={change.isPending || !current || next.length < 6 || next !== confirm}>
+                <Button type="submit" className="flex-1" disabled={change.isPending || !current || next.length < 8 || next !== confirm}>
                   {change.isPending ? <Loader2 className="size-4 animate-spin" /> : "Save new password"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
@@ -546,7 +546,7 @@ function CourseView({
       <div className="space-y-3">
         {categories.map(([c, cItems]) => {
           const cDone = cItems.filter((i) => done.has(i.id)).length
-          const open = openCats.size === 0 || openCats.has(c)
+          const open = !openCats.has(c) // set tracks collapsed; empty = all open
           return (
             <div key={c} className="overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
               <button type="button" onClick={() => toggleCat(c)} className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left">

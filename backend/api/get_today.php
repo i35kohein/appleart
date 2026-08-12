@@ -26,7 +26,7 @@ try {
     }
 
     // --- Active students (optional filter) ---
-    $stuSql = "SELECT id, name, phone, rollcall_group, enrollment_date FROM students WHERE is_active = 1";
+    $stuSql = "SELECT id, name, phone, rollcall_group, enrollment_date FROM students WHERE is_active = 1 AND role = 'student'";
     if ($studentFilter !== '') {
         $ids = array_filter(array_map('intval', explode(',', $studentFilter)));
         if (count($ids)) $stuSql .= " AND id IN (" . implode(',', $ids) . ")";
@@ -42,7 +42,7 @@ try {
 
     // --- Completed progress per student ---
     $progress = [];
-    $pr = $conn->query("SELECT student_id, item_id, completion_date FROM student_progress WHERE status = 'Completed'")->fetchAll(PDO::FETCH_ASSOC);
+    $pr = $conn->query("SELECT student_id, item_id, completion_date FROM student_progress WHERE status = 'Completed' AND detail_idx IS NULL")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($pr as $p) $progress[$p['student_id']][$p['item_id']] = $p['completion_date'];
 
     // --- Scheduled lessons today ---

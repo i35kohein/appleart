@@ -63,7 +63,10 @@ if (strpos($mime, 'image/') === 0) {
     }
 }
 
-$uploadDir = dirname(__DIR__) . '/uploads/materials';
+// Private storage OUTSIDE the web root — files are never directly fetchable.
+$privateDir = dirname(__DIR__, 2) . '/appleart-private/materials';
+if (!is_dir($privateDir)) $privateDir = '/Users/user/appleart-private/materials';
+$uploadDir = $privateDir;
 if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
 $ext = $extMap[$mime];
@@ -75,7 +78,7 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
 }
 
 $origName = mb_substr(basename($file['name']), 0, 255);
-$relativePath = 'uploads/materials/' . $filename;
+$relativePath = 'private/materials/' . $filename;
 
 try {
     $stmt = $conn->prepare("INSERT INTO curriculum_materials (item_id, file_name, file_path, file_type, file_size) VALUES (:i, :n, :p, :t, :s)");

@@ -1,5 +1,7 @@
 <?php
 require_once '../config.php'; // Ensure this points to your DB connection
+require_once __DIR__ . '/auth_check.php';
+if (!require_admin()) exit;
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_data'])) {

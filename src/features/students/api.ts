@@ -182,6 +182,8 @@ export function useSaveProgress() {
       apiPostForm<{ status: string }>("/update_progress.php", fields),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] })
+      qc.invalidateQueries({ queryKey: ["student-portal"] })
+      qc.invalidateQueries({ queryKey: ["student-analytics"] })
       qc.invalidateQueries({ queryKey: ["today"] })
       qc.invalidateQueries({ queryKey: ["student-progress"] })
       qc.invalidateQueries({ queryKey: ["item-progress"] })
