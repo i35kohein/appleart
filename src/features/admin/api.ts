@@ -120,3 +120,19 @@ export function useRegisterUser() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   })
 }
+
+/** Change own admin password (current + new). */
+export function useChangeAdminPassword() {
+  return useMutation({
+    mutationFn: (fields: { current_password: string; new_password: string }) =>
+      apiPostForm<{ status: string }>("/change_admin_password.php", fields),
+  })
+}
+
+/** TOTP 2FA management: status | enable | verify_enable | disable. */
+export function useAdminTotp() {
+  return useMutation({
+    mutationFn: (fields: { action: string; code?: string; password?: string }) =>
+      apiPostForm<{ status: string; enabled?: boolean; secret?: string; uri?: string; message?: string }>("/admin_totp.php", fields),
+  })
+}

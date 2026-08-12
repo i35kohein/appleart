@@ -14,10 +14,10 @@ export function useMe() {
 export function useLogin() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      apiPostForm<LoginResponse>("/login.php", { email, password }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["me"] })
+    mutationFn: ({ email, password, totp_code }: { email: string; password: string; totp_code?: string }) =>
+      apiPostForm<LoginResponse>("/login.php", { email, password, totp_code }),
+    onSuccess: (data) => {
+      if (data.status !== "2fa_required") qc.invalidateQueries({ queryKey: ["me"] })
     },
   })
 }

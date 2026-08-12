@@ -22,6 +22,10 @@ export function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
   const [error, setError] = useState<string | null>(null)
+  const [need2fa, setNeed2fa] = useState(false)
+  const [totpCode, setTotpCode] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -30,10 +34,29 @@ export function LoginPage() {
 
   async function onSubmit(values: FormValues) {
     setError(null)
+    setEmail(values.email)
+    setPassword(values.password)
     login.mutate(values, {
-      onSuccess: () => navigate("/", { replace: true }),
+      onSuccess: (data) => {
+        if (data.status === "2fa_required") {
+          setNeed2fa(true)
+        } else {
+          navigate("/", { replace: true })
+        }
+      },
       onError: (e) => setError(e instanceof Error ? e.message : "Login failed"),
     })
+  }
+
+  async function submit2fa() {
+    setError(null)
+    login.mutate(
+      { email, password, totp_code: totpCode },
+      {
+        onSuccess: () => navigate("/", { replace: true }),
+        onError: (e) => setError(e instanceof Error ? e.message : "Login failed"),
+      },
+    )
   }
 
   return (
@@ -63,33 +86,74 @@ export function LoginPage() {
             <CardDescription>i35 Apple Service staff account နဲ့ ဝင်ပါ။</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@appleart.com" autoComplete="email" {...form.register("email")} />
-                {form.formState.errors.email && (
-                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+            {need2fa ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void submit2fa()
+                }}
+                className="space-y-4"
+              >
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                  <p className="font-medium">Two-factor authentication</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Authenticator app ကရတဲ့ 6 လုံးကုဒ်ကို ရိုက်ထည့်ပါ။
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="totp-code">Authenticator code</Label>
+                  <Input
+                    id="totp-code"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    autoFocus
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                  />
+                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" autoComplete="current-password" {...form.register("password")} />
-                {form.formState.errors.password && (
-                  <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+                <Button type="submit" className="w-full" disabled={login.isPending || totpCode.length !== 6}>
+                  {login.isPending && <Loader2 className="size-4 animate-spin" />}
+                  Verify
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setNeed2fa(false)}>
+                  ← Back to sign in
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="you@appleart.com" autoComplete="email" {...form.register("email")} />
+                  {form.formState.errors.email && (
+                    <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" placeholder="••••••••" autoComplete="current-password" {...form.register("password")} />
+                  {form.formState.errors.password && (
+                    <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </div>
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button type="submit" className="w-full" disabled={login.isPending}>
-                {login.isPending && <Loader2 className="size-4 animate-spin" />}
-                Sign in
-              </Button>
-            </form>
+                <Button type="submit" className="w-full" disabled={login.isPending}>
+                  {login.isPending && <Loader2 className="size-4 animate-spin" />}
+                  Sign in
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

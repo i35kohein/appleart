@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,7 +10,10 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  KeyRound,
+  Loader2,
   Save,
+  ShieldCheck,
   Sparkles,
   Trash2,
   UserPlus,
@@ -30,6 +33,7 @@ import {
   useUsers,
 } from "@/features/admin/api"
 import { useCurriculum, useStudents } from "@/features/students/api"
+import { useAdminTotp, useChangeAdminPassword } from "@/features/admin/api"
 import { MaterialControls, MaterialChips } from "@/features/courses/components/MaterialControls"
 import { useMe } from "@/features/auth/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -831,6 +835,182 @@ function AiSettingsTab() {
   )
 }
 
+function SecurityTab() {
+  const pw = useChangeAdminPassword()
+  const totp = useAdminTotp()
+  const [current, setCurrent] = useState("")
+  const [next, setNext] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const [totpStatus, setTotpStatus] = useState<"loading" | "off" | "secret" | "verify" | "on">("loading")
+  const [totpSecret, setTotpSecret] = useState("")
+  const [totpUri, setTotpUri] = useState("")
+  const [code, setCode] = useState("")
+  const [disablePw, setDisablePw] = useState("")
+  const [totpMsg, setTotpMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  // Load status on mount
+  useEffect(() => {
+    totp.mutate(
+      { action: "status" },
+      {
+        onSuccess: (d) => setTotpStatus(d.enabled ? "on" : "off"),
+        onError: () => setTotpStatus("off"),
+      },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const submitPw = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPwMsg(null)
+    if (next !== confirm) return setPwMsg({ ok: false, text: "Passwords do not match" })
+    pw.mutate(
+      { current_password: current, new_password: next },
+      {
+        onSuccess: () => {
+          setPwMsg({ ok: true, text: "Password changed ✓" })
+          setCurrent(""); setNext(""); setConfirm("")
+        },
+        onError: (err) => setPwMsg({ ok: false, text: err.message }),
+      },
+    )
+  }
+
+  const enable2fa = () => {
+    setTotpMsg(null)
+    totp.mutate(
+      { action: "enable" },
+      {
+        onSuccess: (d) => {
+          setTotpSecret(d.secret ?? "")
+          setTotpUri(d.uri ?? "")
+          setTotpStatus("secret")
+        },
+        onError: (err) => setTotpMsg({ ok: false, text: err.message }),
+      },
+    )
+  }
+
+  const verify2fa = () => {
+    setTotpMsg(null)
+    totp.mutate(
+      { action: "verify_enable", code },
+      {
+        onSuccess: (d) => {
+          setTotpMsg(d.enabled ? { ok: true, text: "2FA enabled ✓ — next login မှာ code လိုပါမယ်" } : { ok: false, text: "Invalid code" })
+          if (d.enabled) setTotpStatus("on")
+        },
+        onError: (err) => setTotpMsg({ ok: false, text: err.message }),
+      },
+    )
+  }
+
+  const disable2fa = () => {
+    setTotpMsg(null)
+    totp.mutate(
+      { action: "disable", password: disablePw },
+      {
+        onSuccess: (d) => {
+          setTotpMsg(d.enabled === false ? { ok: true, text: "2FA disabled" } : { ok: false, text: "Failed" })
+          if (d.enabled === false) { setTotpStatus("off"); setDisablePw("") }
+        },
+        onError: (err) => setTotpMsg({ ok: false, text: err.message }),
+      },
+    )
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* Change password */}
+      <Card>
+        <CardHeader className="px-5">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="size-4 text-primary" /> Change password
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 px-5 pt-0">
+          <form onSubmit={submitPw} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-current">Current password</Label>
+              <Input id="sec-current" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-new">New password (min 10, letters + numbers)</Label>
+              <Input id="sec-new" type="password" value={next} onChange={(e) => setNext(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-confirm">Confirm new password</Label>
+              <Input id="sec-confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </div>
+            {pwMsg && <p className={cn("text-xs font-semibold", pwMsg.ok ? "text-emerald-600" : "text-destructive")}>{pwMsg.text}</p>}
+            <Button type="submit" disabled={pw.isPending || !current || next.length < 10 || next !== confirm}>
+              {pw.isPending ? <Loader2 className="size-4 animate-spin" /> : "Change password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* 2FA */}
+      <Card>
+        <CardHeader className="px-5">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="size-4 text-primary" /> Two-factor authentication (2FA)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 px-5 pt-0">
+          {totpStatus === "loading" && <p className="text-sm text-muted-foreground">Loading…</p>}
+
+          {totpStatus === "off" && (
+            <>
+              <p className="text-sm text-muted-foreground">2FA off — Authenticator app နဲ့ ဖွင့်ထားရင် login ပိုလုံခြုံမယ်။</p>
+              <Button onClick={enable2fa} disabled={totp.isPending}>
+                <ShieldCheck className="size-4" /> Enable 2FA
+              </Button>
+            </>
+          )}
+
+          {totpStatus === "secret" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Google Authenticator (သို့) Authy ထဲ ဒီ secret ကို ထည့်ပါ — scan လုပ်ဖို့ QR မလိုရင် အောက်က URL/secret ကို ကိုယ်တိုင် ထည့်လို့ရတယ်။
+              </p>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="break-all text-xs text-muted-foreground">{totpUri}</p>
+                <p className="mt-2 break-all font-mono text-sm font-semibold">{totpSecret}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="totp-code">Verify code</Label>
+                <Input id="totp-code" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={verify2fa} disabled={totp.isPending || code.length !== 6}>Verify & enable</Button>
+                <Button variant="outline" onClick={() => setTotpStatus("off")}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          {totpStatus === "on" && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-emerald-600">2FA enabled ✓</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="totp-disable-pw">Password နဲ့ ပိတ်ရန်</Label>
+                <div className="flex gap-2">
+                  <Input id="totp-disable-pw" type="password" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} placeholder="••••••••" />
+                  <Button variant="outline" onClick={disable2fa} disabled={totp.isPending || !disablePw}>Disable</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {totpMsg && <p className={cn("text-xs font-semibold", totpMsg.ok ? "text-emerald-600" : "text-destructive")}>{totpMsg.text}</p>}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export function AdminPage() {
   const { data: me } = useMe()
   const students = useStudents()
@@ -852,6 +1032,7 @@ export function AdminPage() {
           <UnderlineTabsTrigger value="users">Users</UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="theme">Theme</UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="ai">AI Assistant & API</UnderlineTabsTrigger>
+          <UnderlineTabsTrigger value="security">Security</UnderlineTabsTrigger>
         </UnderlineTabsList>
 
         <TabsContent value="trainers" className="mt-4">
@@ -862,6 +1043,9 @@ export function AdminPage() {
         </TabsContent>
         <TabsContent value="ai" className="mt-4">
           <AiSettingsTab />
+        </TabsContent>
+        <TabsContent value="security" className="mt-4">
+          <SecurityTab />
         </TabsContent>
         <TabsContent value="trainees" className="mt-4">
           <Card>

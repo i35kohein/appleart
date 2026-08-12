@@ -8,6 +8,6 @@ export interface Me {
 }
 
 export interface LoginResponse {
-  status: "success"
+  status: "success" | "2fa_required"
   message: string
 }
