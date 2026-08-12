@@ -24,8 +24,8 @@ if ($current === '' || $newPass === '') {
     echo json_encode(['status' => 'error', 'message' => 'Current and new password are required']);
     exit;
 }
-if (strlen($newPass) < 6) {
-    echo json_encode(['status' => 'error', 'message' => 'New password must be at least 6 characters']);
+if (strlen($newPass) < 8 || !preg_match('/[A-Za-z]/', $newPass) || !preg_match('/\d/', $newPass)) {
+    echo json_encode(['status' => 'error', 'message' => 'New password must be at least 8 characters with letters and numbers']);
     exit;
 }
 

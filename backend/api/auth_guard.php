@@ -34,6 +34,10 @@ function auth_locked(PDO $conn, string $email, string $ip, string $action, int $
 function auth_fail(PDO $conn, string $email, string $ip, string $action): void {
     $stmt = $conn->prepare("INSERT INTO auth_attempts (email, ip, action, success) VALUES (:e, :i, :a, 0)");
     $stmt->execute(['e' => $email, 'i' => $ip, 'a' => $action]);
+    // Opportunistic cleanup: drop attempts older than 7 days.
+    if (mt_rand(1, 50) === 1) {
+        $conn->exec("DELETE FROM auth_attempts WHERE created_at < (NOW() - INTERVAL 7 DAY)");
+    }
 }
 
 function auth_success(PDO $conn, string $email, string $ip, string $action): void {

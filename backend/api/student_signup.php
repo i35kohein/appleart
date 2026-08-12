@@ -24,8 +24,8 @@ if (mb_strlen($name) > 100 || mb_strlen($phone) > 30) {
     echo json_encode(['status' => 'error', 'message' => 'Invalid input length']);
     exit;
 }
-if (strlen($password) < 6) {
-    echo json_encode(['status' => 'error', 'message' => 'Password must be at least 6 characters']);
+if (strlen($password) < 8 || !preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password)) {
+    echo json_encode(['status' => 'error', 'message' => 'Password must be at least 8 characters with letters and numbers']);
     exit;
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
