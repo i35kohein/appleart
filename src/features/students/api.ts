@@ -96,12 +96,16 @@ export function usePracticalHistory(itemId?: number | null, studentId?: number |
 
 export function useSavePracticalHistory() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: (fields: { action: "add" | "delete"; id?: number; student_id?: number; item_id?: number; repair_date?: string; title?: string; note?: string }) =>
       apiPostForm<{ status: string }>("/save_practical_history.php", fields as Record<string, string | number>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["practical-history"] })
+      qc.invalidateQueries({ queryKey: ["history"] })
+      toast({ title: "Repair history saved", variant: "success" })
     },
+    onError: (err) => toast({ title: "Save failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }
 
@@ -141,6 +145,7 @@ export function useDeleteMaterial() {
 /** Create or update a trainee. Mutate with `{ id?: number; input: StudentInput }`. */
 export function useSaveStudent() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: ({ id, input }: { id?: number; input: StudentInput }) => {
       const fields: Record<string, string | number> = {
@@ -160,18 +165,23 @@ export function useSaveStudent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] })
       qc.invalidateQueries({ queryKey: ["today"] })
+      toast({ title: "Trainee saved ✓", variant: "success" })
     },
+    onError: (err) => toast({ title: "Save failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }
 
 export function useDeleteStudent() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: (id: number) => apiPostForm<{ status: string }>("/delete_student.php", { id }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] })
       qc.invalidateQueries({ queryKey: ["today"] })
+      toast({ title: "Trainee deleted", variant: "success" })
     },
+    onError: (err) => toast({ title: "Delete failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }
 

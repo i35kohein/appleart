@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiFetch, apiPostForm } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import type { Student } from "./types"
 
 /** All students — used to find one by id on the detail page. */
@@ -66,11 +67,14 @@ export function usePayments() {
 
 export function useSavePayment() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: (input: PaymentInput) => apiPostForm<{ status: string }>("/save_payment.php", input as unknown as Record<string, string | number | Blob | null | undefined>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payments"] })
+      toast({ title: "Payment saved", variant: "success" })
     },
+    onError: (err) => toast({ title: "Save failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }
 

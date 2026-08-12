@@ -194,6 +194,9 @@ export function WatermarkViewer({ student, material, onClose }: { student: Porta
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={material.file_name}
       className="fixed inset-0 z-[110] flex flex-col bg-black/95 backdrop-blur-sm"
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -221,16 +224,21 @@ export function WatermarkViewer({ student, material, onClose }: { student: Porta
                   const v = Number(e.target.value)
                   if (v >= 1 && v <= pages) setPage(v)
                 }}
+                onBlur={() => setPage((p) => Math.max(1, Math.min(pages, p)))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur()
+                  e.stopPropagation()
+                }}
                 className="hidden h-8 w-14 rounded-md border border-white/20 bg-white/10 px-1 text-center text-xs tabular-nums text-white outline-none focus:border-white/50 sm:block"
                 aria-label="Go to page"
               />
               <Button size="icon" variant="ghost" className="size-8 text-white" onClick={() => setScale((s) => Math.min(3, s + 0.2))} aria-label="Zoom in">
                 <Plus className="size-4" />
               </Button>
-              <Button size="icon" variant="ghost" className="size-8 text-white" onClick={prev} aria-label="Previous page">
+              <Button size="icon" variant="ghost" className="size-8 text-white disabled:opacity-30" onClick={prev} disabled={page <= 1} aria-label="Previous page">
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button size="icon" variant="ghost" className="size-8 text-white" onClick={next} aria-label="Next page">
+              <Button size="icon" variant="ghost" className="size-8 text-white disabled:opacity-30" onClick={next} disabled={page >= pages} aria-label="Next page">
                 <ChevronRight className="size-4" />
               </Button>
               <span className="px-1 text-xs tabular-nums text-white/70 sm:hidden">{page}/{pages}</span>
@@ -317,9 +325,9 @@ export function WatermarkViewer({ student, material, onClose }: { student: Porta
           </aside>
         )}
 
-        <div ref={containerRef} className="relative flex min-h-0 flex-1 select-none items-center justify-center overflow-auto p-4" onContextMenu={(e) => e.preventDefault()}>
+        <div ref={containerRef} className="relative flex min-h-0 flex-1 select-none justify-center overflow-auto p-4" onContextMenu={(e) => e.preventDefault()}>
           <WatermarkLayer student={student} />
-          <div className="relative z-[5]">
+          <div className="relative z-[5] m-auto">
           {isPdf ? (
             pdfError ? (
               <p className="max-w-md rounded-lg bg-white/10 px-4 py-3 text-center text-sm text-white/80">{pdfError}</p>

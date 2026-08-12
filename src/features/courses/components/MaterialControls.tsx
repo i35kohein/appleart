@@ -173,7 +173,7 @@ export function MaterialChips({ materials }: { materials?: CurriculumMaterial[] 
               type="button"
               className="cursor-pointer text-muted-foreground/60 transition-colors hover:text-destructive"
               title="Delete material"
-              onClick={() => del.mutate(m.id)}
+              onClick={() => { if (window.confirm("Delete this material?")) del.mutate(m.id) }}
             >
               <Trash2 className="size-3" />
             </button>

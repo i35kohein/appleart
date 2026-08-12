@@ -177,7 +177,8 @@ export function PaymentsPage() {
                 ) : (
                   rows.map((p) => {
                     const total = Number(p.total_amount)
-                    const paid = Number(p.first_amount) + Number(p.second_amount)
+                    // second installment counts as paid only when actually paid
+                    const paid = Number(p.first_amount ?? 0) + (p.second_paid_at ? Number(p.second_amount ?? 0) : 0)
                     const remaining = total - paid
                     const progress = total > 0 ? Math.round((paid / total) * 100) : 0
                     return (

@@ -128,7 +128,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== Academy ===== */}
-      <section id="academy" className="bg-[#f5f5f7] py-20 dark:bg-zinc-900">
+      <section id="academy" className="scroll-mt-16 bg-[#f5f5f7] py-20 dark:bg-zinc-900">
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
@@ -217,7 +217,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== Online Learning (dark, Apple-style product section) ===== */}
-      <section id="online" className="bg-black py-24 text-white dark:bg-zinc-950">
+      <section id="online" className="scroll-mt-16 bg-black py-24 text-white dark:bg-zinc-950">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Online Learning</p>
           <h2 className="mx-auto mt-3 max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
@@ -247,7 +247,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== Courses ===== */}
-      <section id="courses" className="bg-[#f5f5f7] py-20 dark:bg-zinc-900">
+      <section id="courses" className="scroll-mt-16 bg-[#f5f5f7] py-20 dark:bg-zinc-900">
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Curriculum</h2>
@@ -301,7 +301,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== Pricing ===== */}
-      <section id="pricing" className="bg-[#f5f5f7] py-20 dark:bg-zinc-900">
+      <section id="pricing" className="scroll-mt-16 bg-[#f5f5f7] py-20 dark:bg-zinc-900">
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Subscription</h2>
@@ -332,7 +332,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== FAQ ===== */}
-      <section id="faq" className="py-20">
+      <section id="faq" className="scroll-mt-16 py-20">
         <div className="mx-auto max-w-3xl px-4">
           <div className="text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">FAQ</h2>
@@ -340,7 +340,7 @@ export function RoleSelectPage() {
           <div className="mt-10 space-y-3">
             {FAQS.map((f) => (
               <details key={f.q} className="group rounded-2xl bg-[#f5f5f7] p-5 dark:bg-zinc-900">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-medium">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-[15px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400">
                   {f.q}
                   <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
                 </summary>
@@ -352,7 +352,7 @@ export function RoleSelectPage() {
       </section>
 
       {/* ===== Contact CTA ===== */}
-      <section id="contact" className="bg-black py-20 text-white dark:bg-zinc-950">
+      <section id="contact" className="scroll-mt-16 bg-black py-20 text-white dark:bg-zinc-950">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Start learning today.</h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] text-zinc-400">

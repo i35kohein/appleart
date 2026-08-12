@@ -52,6 +52,7 @@ export function RollCallPage() {
   const pending = useMemo(() => students.filter((s) => !marks[s.student_id]), [students, marks])
 
   const setMark = (studentId: number, status: MarkStatus) => {
+    if (mark.isPending) return // no double-submit
     setMarks((m) => ({ ...m, [studentId]: status }))
     mark.mutate({ student_id: studentId, status, date: tmDate })
   }
@@ -114,7 +115,7 @@ export function RollCallPage() {
             {pending.map((s) => (
               <div key={s.student_id} className="flex items-center gap-2 rounded-full border bg-muted/40 py-1 pr-1 pl-2 text-sm">
                 <span className="font-medium">{s.student_name}</span>
-                <Button size="sm" className="h-6 rounded-full px-2.5 text-xs" onClick={() => setMark(s.student_id, "Present")}>
+                <Button size="sm" className="h-6 rounded-full px-2.5 text-xs" disabled={mark.isPending} onClick={() => setMark(s.student_id, "Present")}>
                   <Check className="size-3" /> Present
                 </Button>
               </div>
@@ -183,6 +184,7 @@ export function RollCallPage() {
                             <button
                               key={status}
                               type="button"
+                              disabled={mark.isPending}
                               onClick={() => setMark(s.student_id, status)}
                               className={cn(
                                 "flex items-center justify-center gap-1.5 rounded-md border py-2 text-xs font-medium transition-colors",

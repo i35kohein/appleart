@@ -494,6 +494,7 @@ export function CoursesPage() {
   }, [allHistorySorted])
 
   const deleteHistoryGroup = (ids: number[]) => {
+    if (!window.confirm("Delete this repair history?")) return
     void Promise.allSettled(ids.map((id) => saveHistory.mutateAsync({ action: "delete", id })))
   }
 

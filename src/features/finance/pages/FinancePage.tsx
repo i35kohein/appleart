@@ -74,7 +74,10 @@ export function FinancePage() {
     save.mutate(base as never, { onSuccess: () => setDialog(null) })
   }
 
-  const del = (type: FinanceType, id: number) => save.mutate({ action: "delete", type, id } as never)
+  const del = (type: FinanceType, id: number) => {
+    if (!window.confirm("Delete this record?")) return
+    save.mutate({ action: "delete", type, id } as never)
+  }
 
   const rowsFor = (type: FinanceType): FinanceRow[] =>
     type === "assets" ? assets : type === "expenses" ? expenses : type === "shares" ? shares : type === "money_out" ? moneyOut : []

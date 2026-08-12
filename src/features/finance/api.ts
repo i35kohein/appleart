@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiFetch, apiPostForm } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 export interface FinanceRow {
   id: number
@@ -35,11 +36,14 @@ export function useFinance() {
 
 export function useSaveFinance() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: (fields: { action: "add" | "delete"; type: "assets" | "expenses" | "shares" | "money_out"; id?: number } & Record<string, string | number>) =>
       apiPostForm<{ status: string }>("/save_finance.php", fields),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["finance"] })
+      toast({ title: "Finance saved", variant: "success" })
     },
+    onError: (err) => toast({ title: "Save failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }

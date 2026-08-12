@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiFetch, apiPostForm } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 export interface Trainer {
   id: number
@@ -78,12 +79,15 @@ export function useSaveCurriculumItem() {
 
 export function useDeleteCurriculumItem() {
   const qc = useQueryClient()
+  const { toast } = useToast()
   return useMutation({
     mutationFn: (id: number) => apiPostForm<{ status: string }>("/delete_curriculum.php", { id }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["curriculum"] })
       qc.invalidateQueries({ queryKey: ["calendar"] })
+      toast({ title: "Lesson deleted", variant: "success" })
     },
+    onError: (err) => toast({ title: "Delete failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }
 

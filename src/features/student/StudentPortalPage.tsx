@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { BookOpen, Check, ChevronLeft, ChevronRight, ChevronDown, Clock, FileText, KeyRound, Loader2, LogOut, Pencil, PlayCircle, RotateCcw, Settings, User, Wrench } from "lucide-react"
 import { useStudentChangePassword, useStudentLogin, useStudentLogout, useStudentMe, useStudentPortalData, useStudentSignup, useStudentUpdateProfile, useStudentUpdateProgress, type PortalProgressRow } from "@/features/student/api"
@@ -457,7 +457,6 @@ function LessonView({
             size="lg"
             className={cn("min-w-44 gap-2", completed ? "bg-muted text-muted-foreground hover:bg-muted" : "bg-emerald-500 text-white hover:bg-emerald-600")}
             disabled={busy || (!completed && !canComplete)}
-            title={!completed && !canComplete ? `Steps ${doneSteps.size}/${steps.length} ပြည့်မှ Mark complete ရမယ်` : undefined}
             onClick={() => void toggleComplete()}
           >
             {busy ? (
@@ -476,6 +475,11 @@ function LessonView({
             Next <ChevronRight className="size-4" />
           </Button>
         </div>
+        {!completed && !canComplete && (
+          <p className="pb-4 text-center text-xs text-muted-foreground">
+            Steps {doneSteps.size}/{steps.length} ပြည့်မှ Mark complete လုပ်လို့ရမယ်
+          </p>
+        )}
       </div>
     </div>
   )
@@ -549,7 +553,7 @@ function CourseView({
           const open = !openCats.has(c) // set tracks collapsed; empty = all open
           return (
             <div key={c} className="overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <button type="button" onClick={() => toggleCat(c)} className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left">
+              <button type="button" onClick={() => toggleCat(c)} aria-expanded={open} className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left">
                 <ChevronDown className={cn("size-4 shrink-0 text-zinc-400 transition-transform", !open && "-rotate-90")} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">{c}</span>
                 <span className="text-xs tabular-nums text-zinc-500">
@@ -726,6 +730,11 @@ export function StudentPortalPage() {
 
   const openLesson = (item: CurriculumItem) => setRoute({ name: "lesson", itemId: item.id })
   const openCourse = (t: "Course" | "Practical") => setRoute({ name: "course", type: t })
+
+  // Scroll to top whenever the portal view changes.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [route])
 
   // Lesson ordering within the same type for prev/next.
   const lessonNav = useMemo(() => {
