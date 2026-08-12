@@ -1,0 +1,17 @@
+{
+  "name": "Apple Art Academy",
+  "short_name": "Apple Art",
+  "description": "Student management for Apple Art i Device Repair Training academy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "/aalogo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
