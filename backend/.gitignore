@@ -1,0 +1,7 @@
+# Never commit secrets or personal data to the public repo
+config.php
+uploads/
+vendor/
+*.sql
+*.ini
+appleart-php.ini
