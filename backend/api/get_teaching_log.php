@@ -8,7 +8,9 @@ header('Content-Type: application/json');
 // Teaching log — everything that happened in training, by date:
 //   kind='lesson'  -> whole-lesson completion (effect + note from lesson-level mark)
 //   kind='steps'   -> detail steps taught that day (student, lesson, step names) — lesson not fully complete
-//   kind='repair'  -> practical_history (source='practical') or real_world_repairs (source='real')
+//   kind='repair'  -> practical_history (source='practical') or real_world_repairs (source='real');
+//                     identical repairs (same title + note + date) are grouped into ONE row
+//                     with all trainee names combined.
 // Filters: ?from=YYYY-MM-DD&to=YYYY-MM-DD&student_id=&effect=effective|partial|not_effective
 
 try {
@@ -17,8 +19,31 @@ try {
                    WHERE sp2.student_id = p.student_id AND sp2.item_id = p.item_id
                      AND sp2.detail_idx IS NOT NULL AND sp2.status = 'Completed')";
 
-    $sql = "SELECT t.* FROM (
-        -- 1) whole-lesson completions (valid only when lesson has no steps OR all steps done)
+    // ---- per-part filter fragments (same $params array, bound once) ----
+    $f = ['from' => '', 'to' => '', 'sid' => '', 'eff' => ''];
+    if (!empty($_GET['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['from'])) {
+        $f['from'] = " AND DATE(%s) >= :from";
+    }
+    if (!empty($_GET['to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to'])) {
+        $f['to'] = " AND DATE(%s) <= :to";
+    }
+    if (!empty($_GET['student_id']) && intval($_GET['student_id']) > 0) {
+        $f['sid'] = " AND %s = :sid";
+    }
+    if (!empty($_GET['effect']) && in_array($_GET['effect'], ['effective', 'partial', 'not_effective'], true)) {
+        $f['eff'] = " AND %s = :eff";
+    }
+
+    $params = [];
+    if ($f['from'] !== '') $params['from'] = $_GET['from'];
+    if ($f['to'] !== '') $params['to'] = $_GET['to'];
+    if ($f['sid'] !== '') $params['sid'] = intval($_GET['student_id']);
+    if ($f['eff'] !== '') $params['eff'] = $_GET['effect'];
+
+    // Parts that carry no effect simply return nothing when an effect filter is active.
+    $noEff = $f['eff'] !== '' ? " AND 1=0" : "";
+
+    $part1 = "
         SELECT CONCAT('L', l.id) AS id,
                DATE(l.completion_date) AS log_date,
                p.student_id, p.item_id, 'lesson' AS kind,
@@ -36,11 +61,13 @@ try {
         WHERE p.status = 'Completed'
           AND l.id IS NOT NULL
           AND (ci.details IS NULL OR TRIM(ci.details) = '' OR $stepsDone >= $lineCount)
-        GROUP BY p.student_id, p.item_id
+          " . sprintf($f['from'], 'l.completion_date') . "
+          " . sprintf($f['to'], 'l.completion_date') . "
+          " . sprintf($f['sid'], 'p.student_id') . "
+          " . sprintf($f['eff'], 'l.effect') . "
+        GROUP BY p.student_id, p.item_id";
 
-        UNION ALL
-
-        -- 2) detail steps taught on a given day (lesson not fully completed yet)
+    $part2 = "
         SELECT CONCAT('S', p.student_id, '-', p.item_id, '-', DATE(p.completion_date)) AS id,
                DATE(p.completion_date) AS log_date, p.student_id, p.item_id, 'steps' AS kind,
                NULL AS effect, NULL AS note, NULL AS created_at,
@@ -63,47 +90,43 @@ try {
                         AND sp4.detail_idx IS NOT NULL AND sp4.status = 'Completed')
                      >= (CHAR_LENGTH(ci3.details) - CHAR_LENGTH(REPLACE(REPLACE(ci3.details, '\\r', ''), '\\n', '')) + 1))
           )
-        GROUP BY p.student_id, p.item_id, DATE(p.completion_date)
+          " . sprintf($f['from'], 'p.completion_date') . "
+          " . sprintf($f['to'], 'p.completion_date') . "
+          " . sprintf($f['sid'], 'p.student_id') . $noEff . "
+        GROUP BY p.student_id, p.item_id, DATE(p.completion_date)";
 
-        UNION ALL
-
-        -- 3) practical repairs (practice sessions)
-        SELECT CONCAT('P', h.id) AS id, h.repair_date AS log_date,
-               h.student_id, NULL AS item_id, 'repair' AS kind,
+    $part3 = "
+        SELECT CONCAT('P', MIN(h.id)) AS id, h.repair_date AS log_date,
+               MIN(h.student_id) AS student_id, NULL AS item_id, 'repair' AS kind,
                NULL AS effect, h.note, NULL AS created_at,
-               s.name AS student_name, h.title AS item_title, NULL AS item_type,
+               GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') AS student_name,
+               h.title AS item_title, NULL AS item_type,
                NULL AS step_names, 'practical' AS source
         FROM practical_history h
         LEFT JOIN students s ON s.id = h.student_id
+        WHERE 1=1
+          " . sprintf($f['from'], 'h.repair_date') . "
+          " . sprintf($f['to'], 'h.repair_date') . "
+          " . sprintf($f['sid'], 'h.student_id') . $noEff . "
+        GROUP BY h.repair_date, h.title, h.note";
 
-        UNION ALL
-
-        -- 4) real-world repairs
-        SELECT CONCAT('R', h.id) AS id, DATE(h.created_at) AS log_date,
-               h.student_id, NULL AS item_id, 'repair' AS kind,
+    $part4 = "
+        SELECT CONCAT('R', MIN(h.id)) AS id, DATE(h.created_at) AS log_date,
+               MIN(h.student_id) AS student_id, NULL AS item_id, 'repair' AS kind,
                NULL AS effect, h.comment AS note, NULL AS created_at,
-               s.name AS student_name, h.repair_title AS item_title, NULL AS item_type,
+               GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') AS student_name,
+               h.repair_title AS item_title, NULL AS item_type,
                NULL AS step_names, 'real' AS source
         FROM real_world_repairs h
         JOIN students s ON s.id = h.student_id
-    ) t
-    WHERE 1=1";
+        WHERE 1=1
+          " . sprintf($f['from'], 'h.created_at') . "
+          " . sprintf($f['to'], 'h.created_at') . "
+          " . sprintf($f['sid'], 'h.student_id') . $noEff . "
+        GROUP BY DATE(h.created_at), h.repair_title, h.comment";
 
-    $params = [];
-    if (!empty($_GET['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['from'])) {
-        $sql .= " AND t.log_date >= :from"; $params['from'] = $_GET['from'];
-    }
-    if (!empty($_GET['to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to'])) {
-        $sql .= " AND t.log_date <= :to"; $params['to'] = $_GET['to'];
-    }
-    if (!empty($_GET['student_id']) && intval($_GET['student_id']) > 0) {
-        $sql .= " AND t.student_id = :sid"; $params['sid'] = intval($_GET['student_id']);
-    }
-    if (!empty($_GET['effect']) && in_array($_GET['effect'], ['effective', 'partial', 'not_effective'], true)) {
-        $sql .= " AND t.effect = :eff"; $params['eff'] = $_GET['effect'];
-    }
-
-    $sql .= " ORDER BY t.log_date DESC, t.student_name ASC";
+    $sql = "SELECT t.* FROM ( $part1 UNION ALL $part2 UNION ALL $part3 UNION ALL $part4 ) t
+            ORDER BY t.log_date DESC, t.student_name ASC";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
