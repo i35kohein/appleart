@@ -23,6 +23,7 @@ const CalendarPage = lazy(() => import("@/features/calendar/pages/CalendarPage")
 const TodayScreenPage = lazy(() => import("@/features/today/pages/TodayScreenPage").then((m) => ({ default: m.TodayScreenPage })))
 const ContactsPage = lazy(() => import("@/features/contacts/pages/ContactsPage").then((m) => ({ default: m.ContactsPage })))
 const AdminPage = lazy(() => import("@/features/admin/pages/AdminPage").then((m) => ({ default: m.AdminPage })))
+const TeachingLogPage = lazy(() => import("@/features/teachinglog/TeachingLogPage").then((m) => ({ default: m.TeachingLogPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
       { path: "exams", element: withSuspense(<ExamsPage />) },
       { path: "calendar", element: withSuspense(<CalendarPage />) },
       { path: "today", element: withSuspense(<TodayScreenPage />) },
+      { path: "teachinglog", element: withSuspense(<TeachingLogPage />) },
       { path: "contacts", element: withSuspense(<ContactsPage />) },
       { path: "admin", element: withSuspense(<AdminPage />) },
     ],

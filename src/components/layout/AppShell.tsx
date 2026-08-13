@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
-import { Banknote, CalendarClock, CalendarDays, ClipboardList, Contact, CreditCard, FileText, GraduationCap, History, LayoutDashboard, LogOut, Menu, MonitorPlay, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun, Sparkles, Users } from "lucide-react"
+import { Banknote, BookOpenCheck, CalendarClock, CalendarDays, ClipboardList, Contact, CreditCard, FileText, GraduationCap, History, LayoutDashboard, LogOut, Menu, MonitorPlay, Moon, PanelLeftClose, PanelLeftOpen, Settings, Sun, Sparkles, Users } from "lucide-react"
 import { useMe, useLogout } from "@/features/auth/api"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/rollcall", label: "Roll Call", icon: ClipboardList },
   { to: "/courses", label: "Courses", icon: FileText },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/teachinglog", label: "Teaching Log", icon: BookOpenCheck },
   { to: "/today", label: "Today Screen", icon: MonitorPlay },
   { to: "/exams", label: "Exams", icon: GraduationCap },
   { to: "/payments", label: "Payments", icon: CreditCard },
