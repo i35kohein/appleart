@@ -5,33 +5,38 @@ if (!require_admin()) exit;
 
 header('Content-Type: application/json');
 
-// Teaching log — every teaching session: date, who, what lesson, effect.
+// Teaching log — derived automatically from COURSE progress data (student_progress).
+// Shows: on which date, which trainee completed which lesson, and the marked effect.
 // Filters: ?from=YYYY-MM-DD&to=YYYY-MM-DD&student_id=&effect=effective|partial|not_effective
 
 try {
     $conds = [];
     $params = [];
     if (!empty($_GET['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['from'])) {
-        $conds[] = "t.log_date >= :from"; $params['from'] = $_GET['from'];
+        $conds[] = "DATE(p.completion_date) >= :from"; $params['from'] = $_GET['from'];
     }
     if (!empty($_GET['to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to'])) {
-        $conds[] = "t.log_date <= :to"; $params['to'] = $_GET['to'];
+        $conds[] = "DATE(p.completion_date) <= :to"; $params['to'] = $_GET['to'];
     }
     if (!empty($_GET['student_id']) && intval($_GET['student_id']) > 0) {
-        $conds[] = "t.student_id = :sid"; $params['sid'] = intval($_GET['student_id']);
+        $conds[] = "p.student_id = :sid"; $params['sid'] = intval($_GET['student_id']);
     }
     if (!empty($_GET['effect']) && in_array($_GET['effect'], ['effective', 'partial', 'not_effective'], true)) {
-        $conds[] = "t.effect = :eff"; $params['eff'] = $_GET['effect'];
+        $conds[] = "p.effect = :eff"; $params['eff'] = $_GET['effect'];
     }
-    $where = $conds ? " WHERE " . implode(" AND ", $conds) : "";
+    // Lesson-level completions only (detail step rows carry detail_idx, not shown here).
+    $conds[] = "p.detail_idx IS NULL";
+    $conds[] = "p.status = 'Completed'";
+    $where = " WHERE " . implode(" AND ", $conds);
 
-    $sql = "SELECT t.id, t.log_date, t.student_id, t.item_id, t.effect, t.note, t.created_at,
+    $sql = "SELECT p.id, DATE(p.completion_date) AS log_date, p.student_id, p.item_id, p.effect, p.instructor_note AS note,
+                   DATE_FORMAT(p.completion_date, '%Y-%m-%d %H:%i') AS created_at,
                    s.name AS student_name, ci.title AS item_title, ci.type AS item_type
-            FROM teaching_log t
-            LEFT JOIN students s ON s.id = t.student_id
-            LEFT JOIN curriculum_items ci ON ci.id = t.item_id
+            FROM student_progress p
+            LEFT JOIN students s ON s.id = p.student_id
+            LEFT JOIN curriculum_items ci ON ci.id = p.item_id
             $where
-            ORDER BY t.log_date DESC, t.id DESC";
+            ORDER BY p.completion_date DESC, p.id DESC";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);

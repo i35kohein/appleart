@@ -16,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $status = $_POST['status'] ?? 'Completed';
     $comment = $_POST['comment'] ?? '';
     $trainer_name = $_POST['trainer_name'] ?? 'Instructor';
+    // Teaching-log result: effective | partial | not_effective (optional)
+    $effect_raw = $_POST['effect'] ?? '';
+    $effect = in_array($effect_raw, ['effective', 'partial', 'not_effective'], true) ? $effect_raw : null;
     // Optional: detail step index (1-based). NULL = whole-lesson mark.
     $detail_raw = $_POST['detail_idx'] ?? '';
     $detail_idx = ($detail_raw !== '' && $detail_raw !== null) ? intval($detail_raw) : null;
@@ -50,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $check = $conn->prepare("SELECT id FROM student_progress WHERE student_id = :sid AND item_id = :iid AND detail_idx = :di");
             $check->execute(['sid' => $student_id, 'iid' => $item_id, 'di' => $detail_idx]);
             if ($check->rowCount() > 0) {
-                $stmt = $conn->prepare("UPDATE student_progress SET status = 'Completed', completion_date = :date, trainer_name = :trainer WHERE student_id = :sid AND item_id = :iid AND detail_idx = :di");
+                $stmt = $conn->prepare("UPDATE student_progress SET status = 'Completed', completion_date = :date, trainer_name = :trainer, effect = COALESCE(:eff, effect) WHERE student_id = :sid AND item_id = :iid AND detail_idx = :di");
             } else {
-                $stmt = $conn->prepare("INSERT INTO student_progress (student_id, item_id, detail_idx, status, completion_date, trainer_name) VALUES (:sid, :iid, :di, 'Completed', :date, :trainer)");
+                $stmt = $conn->prepare("INSERT INTO student_progress (student_id, item_id, detail_idx, status, completion_date, trainer_name, effect) VALUES (:sid, :iid, :di, 'Completed', :date, :trainer, :eff)");
             }
-            $stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'di' => $detail_idx, 'date' => $date, 'trainer' => $trainer_name]);
+            $stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'di' => $detail_idx, 'date' => $date, 'trainer' => $trainer_name, 'eff' => $effect]);
 
             $hist_stmt = $conn->prepare("INSERT INTO progress_history (student_id, item_id, status, comment, trainer_name, created_at) VALUES (:sid, :iid, :status, :comment, :trainer, :date)");
             $hist_stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'status' => 'Completed', 'comment' => $comment, 'trainer' => $trainer_name, 'date' => $date]);
@@ -68,12 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $check = $conn->prepare("SELECT id FROM student_progress WHERE student_id = :sid AND item_id = :iid AND detail_idx IS NULL");
         $check->execute(['sid' => $student_id, 'iid' => $item_id]);
 
+        $eff_val = ($status === 'Completed') ? $effect : null;
+        $note_val = $comment !== '' ? $comment : null;
         if ($check->rowCount() > 0) {
-            $stmt = $conn->prepare("UPDATE student_progress SET status = :status, completion_date = :date, trainer_name = :trainer WHERE student_id = :sid AND item_id = :iid AND detail_idx IS NULL");
+            $stmt = $conn->prepare("UPDATE student_progress SET status = :status, completion_date = :date, trainer_name = :trainer, effect = :eff, instructor_note = CASE WHEN :note <> '' THEN :note ELSE instructor_note END WHERE student_id = :sid AND item_id = :iid AND detail_idx IS NULL");
         } else {
-            $stmt = $conn->prepare("INSERT INTO student_progress (student_id, item_id, status, completion_date, trainer_name) VALUES (:sid, :iid, :status, :date, :trainer)");
+            $stmt = $conn->prepare("INSERT INTO student_progress (student_id, item_id, status, completion_date, trainer_name, effect, instructor_note) VALUES (:sid, :iid, :status, :date, :trainer, :eff, :note)");
         }
-        $stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'status' => $status, 'date' => $date, 'trainer' => $trainer_name]);
+        $stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'status' => $status, 'date' => $date, 'trainer' => $trainer_name, 'eff' => $eff_val, 'note' => $note_val]);
 
         $hist_stmt = $conn->prepare("INSERT INTO progress_history (student_id, item_id, status, comment, trainer_name, created_at) VALUES (:sid, :iid, :status, :comment, :trainer, :date)");
         $hist_stmt->execute(['sid' => $student_id, 'iid' => $item_id, 'status' => $status, 'comment' => $comment, 'trainer' => $trainer_name, 'date' => $date]);

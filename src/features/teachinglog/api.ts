@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useToast } from "@/components/ui/toast"
-import { apiFetch, apiPostForm } from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
+import { apiFetch } from "@/lib/api"
 
 export type TeachingEffect = "effective" | "partial" | "not_effective"
 
@@ -9,7 +8,7 @@ export interface TeachingLogRow {
   log_date: string
   student_id: number | null
   item_id: number | null
-  effect: TeachingEffect
+  effect: TeachingEffect | null
   note: string | null
   created_at: string
   student_name: string | null
@@ -42,37 +41,5 @@ export function useTeachingLog(filters: TeachingLogFilters) {
       const qs = params.toString()
       return apiFetch<{ data: TeachingLogRow[] }>(`/get_teaching_log.php${qs ? `?${qs}` : ""}`).then((r) => r.data)
     },
-  })
-}
-
-export interface TeachingLogInput {
-  log_date?: string
-  student_id?: number | null
-  item_id?: number | null
-  effect?: TeachingEffect
-  note?: string
-}
-
-export interface TeachingLogInput {
-  log_date?: string
-  student_id?: number | null
-  item_id?: number | null
-  effect?: TeachingEffect
-  note?: string
-}
-
-export function useSaveTeachingLog() {
-  const qc = useQueryClient()
-  const { toast } = useToast()
-  return useMutation({
-    mutationFn: (fields: { action: "add" | "delete"; id?: number } & TeachingLogInput) =>
-      apiPostForm<{ status: string }>("/save_teaching_log.php", fields as unknown as Record<string, string | number>),
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["teaching-log"] })
-      qc.invalidateQueries({ queryKey: ["today"] })
-      toast({ title: vars.action === "delete" ? "Entry deleted" : "Teaching log saved ✓", variant: "success" })
-    },
-    onError: (err) =>
-      toast({ title: "Save failed", description: err instanceof Error ? err.message : undefined, variant: "error" }),
   })
 }

@@ -188,7 +188,7 @@ export function useDeleteStudent() {
 export function useSaveProgress() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (fields: { student_id: number; item_id: number; status: string; comment?: string; trainer_name?: string; completion_date?: string; detail_idx?: number | null }) =>
+    mutationFn: (fields: { student_id: number; item_id: number; status: string; comment?: string; trainer_name?: string; completion_date?: string; detail_idx?: number | null; effect?: "effective" | "partial" | "not_effective" | null }) =>
       apiPostForm<{ status: string }>("/update_progress.php", fields),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] })

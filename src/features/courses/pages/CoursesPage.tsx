@@ -4,6 +4,7 @@ import { useQueries } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import { useCurriculum, useInProgress, usePracticalHistory, useSavePracticalHistory, useSaveProgress, useStudentProgress, useStudents } from "@/features/students/api"
 import type { CurriculumMaterial } from "@/features/students/types"
+import { EFFECT_LABELS, type TeachingEffect } from "@/features/teachinglog/api"
 import { useTimeMachine } from "@/lib/timemachine"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardTitle } from "@/components/ui/card"
@@ -285,6 +286,7 @@ export function CoursesPage() {
   const [highlightId, setHighlightId] = useState<number | null>(null)
   const [statusModal, setStatusModal] = useState<{ itemId: number; status: "In Progress" | "Completed"; itemTitle: string; before: Set<number> } | null>(null)
   const [statusChecked, setStatusChecked] = useState<Set<number>>(new Set())
+  const [statusEffect, setStatusEffect] = useState<TeachingEffect>("effective")
   const jumpToLesson = (itemId: number) => {
     const item = items.find((i) => i.id === itemId)
     if (!item) return
@@ -677,7 +679,7 @@ export function CoursesPage() {
     })
   }
 
-  const applyStatusToStudents = async (itemId: number, status: "Pending" | "In Progress" | "Completed", studentIds: number[]) => {
+  const applyStatusToStudents = async (itemId: number, status: "Pending" | "In Progress" | "Completed", studentIds: number[], effect: TeachingEffect | null = null) => {
     if (studentIds.length === 0) return
     setError(null)
     setToggling(String(itemId))
@@ -689,6 +691,7 @@ export function CoursesPage() {
           status,
           trainer_name: "Instructor",
           completion_date: tmDate,
+          effect: status === "Completed" ? (effect ?? "effective") : null,
         }),
       ),
     )
@@ -733,6 +736,7 @@ export function CoursesPage() {
           status,
           trainer_name: "Instructor",
           completion_date: tmDate,
+          effect: status === "Completed" ? statusEffect : null,
         }),
       ),
       ...unmarkIds.map((sid) =>
@@ -1004,6 +1008,25 @@ export function CoursesPage() {
             </DialogTitle>
             <DialogDescription>ဘယ် active trainee တွေကို ဒီ status ပေးမလဲ ရွေးပါ။</DialogDescription>
           </DialogHeader>
+          {statusModal?.status === "Completed" && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+              <Label htmlFor="status-effect" className="text-sm font-medium">
+                Result
+              </Label>
+              <Select value={statusEffect} onValueChange={(v) => setStatusEffect(v as TeachingEffect)}>
+                <SelectTrigger id="status-effect" className="w-44" aria-label="Result">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["effective", "partial", "not_effective"] as TeachingEffect[]).map((e) => (
+                    <SelectItem key={e} value={e}>
+                      {EFFECT_LABELS[e]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
             {activeStudents.map((s) => {
               const checked = statusChecked.has(s.id)

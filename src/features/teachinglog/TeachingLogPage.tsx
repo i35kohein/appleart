@@ -1,17 +1,14 @@
 import { useMemo, useState } from "react"
-import { BookOpenCheck, CalendarDays, FilterX, Plus, Trash2, TrendingUp } from "lucide-react"
-import { useCurriculum, useStudents } from "@/features/students/api"
-import { EFFECT_LABELS, type TeachingEffect, useSaveTeachingLog, useTeachingLog } from "@/features/teachinglog/api"
-import { todayStr, useTimeMachine } from "@/lib/timemachine"
+import { BookOpenCheck, CalendarDays, FilterX, TrendingUp } from "lucide-react"
+import { useStudents } from "@/features/students/api"
+import { EFFECT_LABELS, type TeachingEffect, useTeachingLog } from "@/features/teachinglog/api"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
 import { EmptyState } from "@/components/common/feedback"
 
 const EFFECT_BADGE: Record<TeachingEffect, string> = {
@@ -33,162 +30,6 @@ function weekdayOf(dateStr: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long" })
 }
 
-interface AddEntryDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-function AddEntryDialog({ open, onOpenChange }: AddEntryDialogProps) {
-  const students = useStudents()
-  const curriculum = useCurriculum()
-  const save = useSaveTeachingLog()
-  const { date: workingDate } = useTimeMachine()
-  const [form, setForm] = useState({
-    log_date: workingDate || todayStr(),
-    student_id: "",
-    item_id: "",
-    effect: "effective" as TeachingEffect,
-    note: "",
-  })
-  const [lastOpen, setLastOpen] = useState(false)
-  const [added, setAdded] = useState(0)
-
-  // Reset form each time the dialog opens.
-  if (open && !lastOpen) {
-    setLastOpen(true)
-    setAdded(0)
-    setForm({ log_date: workingDate || todayStr(), student_id: "", item_id: "", effect: "effective", note: "" })
-  }
-  if (!open && lastOpen) setLastOpen(false)
-
-  const studentList = students.data ?? []
-  const lessonList = curriculum.data ?? []
-
-  const submit = () => {
-    if (form.student_id === "" && form.item_id === "") return
-    save.mutate(
-      {
-        action: "add",
-        log_date: form.log_date || workingDate || todayStr(),
-        student_id: form.student_id !== "" ? Number(form.student_id) : null,
-        item_id: form.item_id !== "" ? Number(form.item_id) : null,
-        effect: form.effect,
-        note: form.note || undefined,
-      },
-      {
-        onSuccess: () => {
-          setAdded((n) => n + 1)
-          setForm((f) => ({ ...f, note: "", effect: "effective" }))
-        },
-      },
-    )
-  }
-
-  const done = () => {
-    setAdded(0)
-    onOpenChange(false)
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Log teaching session</DialogTitle>
-          <DialogDescription>Record what was taught, to whom, and how it went.</DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tl-date">Date</Label>
-              <Input
-                id="tl-date"
-                type="date"
-                value={form.log_date}
-                max={todayStr()}
-                onChange={(e) => setForm((f) => ({ ...f, log_date: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Effect</Label>
-              <Select value={form.effect} onValueChange={(v) => setForm((f) => ({ ...f, effect: v as TeachingEffect }))}>
-                <SelectTrigger aria-label="Effect">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EFFECT_OPTIONS.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {EFFECT_LABELS[e]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="tl-student">Trainee</Label>
-            <Select value={form.student_id} onValueChange={(v) => setForm((f) => ({ ...f, student_id: v }))}>
-              <SelectTrigger id="tl-student" aria-label="Trainee">
-                <SelectValue placeholder="Pick a trainee" />
-              </SelectTrigger>
-              <SelectContent>
-                {studentList.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="tl-lesson">Lesson taught</Label>
-            <Select value={form.item_id} onValueChange={(v) => setForm((f) => ({ ...f, item_id: v }))}>
-              <SelectTrigger id="tl-lesson" aria-label="Lesson taught">
-                <SelectValue placeholder="Pick a lesson" />
-              </SelectTrigger>
-              <SelectContent>
-                {lessonList.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="tl-note">Note (optional)</Label>
-            <Textarea
-              id="tl-note"
-              rows={2}
-              placeholder="e.g. understood quickly / needs more practice on this"
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-            />
-          </div>
-
-          {added > 0 && (
-            <p className="text-sm text-green-600 dark:text-green-400">
-              ✓ {added} entr{added === 1 ? "y" : "ies"} logged — add another or close.
-            </p>
-          )}
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={done}>
-            Done
-          </Button>
-          <Button onClick={submit} disabled={form.student_id === "" && form.item_id === ""}>
-            <Plus className="size-4" /> Log entry
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function TeachingLogPage() {
   const students = useStudents()
   const [filters, setFilters] = useState<{ from: string; to: string; student_id: string; effect: string }>({
@@ -197,9 +38,6 @@ export function TeachingLogPage() {
     student_id: "",
     effect: "",
   })
-  const [addOpen, setAddOpen] = useState(false)
-  const save = useSaveTeachingLog()
-  const [confirmId, setConfirmId] = useState<number | null>(null)
 
   const log = useTeachingLog({
     from: filters.from || undefined,
@@ -213,8 +51,14 @@ export function TeachingLogPage() {
   const stats = useMemo(() => {
     const total = rows.length
     const counts: Record<TeachingEffect, number> = { effective: 0, partial: 0, not_effective: 0 }
-    for (const r of rows) counts[r.effect]++
-    const effectiveRate = total > 0 ? Math.round((counts.effective / total) * 100) : 0
+    let withEffect = 0
+    for (const r of rows) {
+      if (r.effect) {
+        counts[r.effect]++
+        withEffect++
+      }
+    }
+    const effectiveRate = withEffect > 0 ? Math.round((counts.effective / withEffect) * 100) : 0
     return { total, counts, effectiveRate }
   }, [rows])
 
@@ -235,14 +79,11 @@ export function TeachingLogPage() {
   return (
     <div className="space-y-4 p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Teaching Log</h1>
-          <p className="text-sm text-muted-foreground">Who was taught what, when — and how it went.</p>
-        </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus className="size-4" /> Log session
-        </Button>
+      <div>
+        <h1 className="text-xl font-semibold">Teaching Log</h1>
+        <p className="text-sm text-muted-foreground">
+          Automatically from course progress — who completed which lesson, when, and the result.
+        </p>
       </div>
 
       {/* Summary */}
@@ -254,7 +95,7 @@ export function TeachingLogPage() {
             </div>
             <div>
               <p className="text-2xl font-semibold leading-none">{stats.total}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Entries</p>
+              <p className="mt-1 text-xs text-muted-foreground">Completed lessons</p>
             </div>
           </CardContent>
         </Card>
@@ -348,11 +189,11 @@ export function TeachingLogPage() {
       ) : rows.length === 0 ? (
         <EmptyState
           icon={<CalendarDays className="size-8" />}
-          title="No teaching logs yet"
+          title="No completed lessons yet"
           hint={
             hasFilters
               ? "Nothing matches these filters."
-              : "Log your first session — pick a trainee, lesson and effect."
+              : "Mark lessons as done in Courses — they appear here automatically."
           }
         />
       ) : (
@@ -387,22 +228,17 @@ export function TeachingLogPage() {
                           <span className="font-medium">{e.student_name ?? "—"}</span>
                           <span className="text-muted-foreground">→</span>
                           <span className="text-sm">{e.item_title ?? "—"}</span>
-                          <Badge className={EFFECT_BADGE[e.effect]}>
-                            <span className={`mr-1 inline-block size-1.5 rounded-full ${EFFECT_DOT[e.effect]}`} />
-                            {EFFECT_LABELS[e.effect]}
-                          </Badge>
+                          {e.effect ? (
+                            <Badge className={EFFECT_BADGE[e.effect]}>
+                              <span className={`mr-1 inline-block size-1.5 rounded-full ${EFFECT_DOT[e.effect]}`} />
+                              {EFFECT_LABELS[e.effect]}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">(no result marked)</span>
+                          )}
                         </div>
                         {e.note && <p className="mt-1 text-sm text-muted-foreground">{e.note}</p>}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                        aria-label={`Delete entry for ${e.student_name ?? "unknown"}`}
-                        onClick={() => setConfirmId(e.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -411,32 +247,6 @@ export function TeachingLogPage() {
           ))}
         </div>
       )}
-
-      {/* Delete confirm */}
-      <Dialog open={confirmId != null} onOpenChange={(o) => !o && setConfirmId(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete this entry?</DialogTitle>
-            <DialogDescription>This removes the teaching log entry. This cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setConfirmId(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirmId != null) save.mutate({ action: "delete", id: confirmId })
-                setConfirmId(null)
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AddEntryDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   )
 }
