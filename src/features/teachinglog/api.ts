@@ -4,16 +4,19 @@ import { apiFetch } from "@/lib/api"
 export type TeachingEffect = "effective" | "partial" | "not_effective"
 
 export interface TeachingLogRow {
-  id: number
+  id: string
   log_date: string
   student_id: number | null
   item_id: number | null
+  kind: "lesson" | "steps" | "repair"
   effect: TeachingEffect | null
   note: string | null
-  created_at: string
+  created_at: string | null
   student_name: string | null
   item_title: string | null
   item_type: string | null
+  step_names: string | null
+  source: "practical" | "real" | null
 }
 
 export interface TeachingLogFilters {

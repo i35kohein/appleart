@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { BookOpenCheck, CalendarDays, FilterX, TrendingUp } from "lucide-react"
+import { BookOpenCheck, CalendarDays, FilterX, TrendingUp, Wrench } from "lucide-react"
 import { useStudents } from "@/features/students/api"
 import { EFFECT_LABELS, type TeachingEffect, useTeachingLog } from "@/features/teachinglog/api"
 import { Badge } from "@/components/ui/badge"
@@ -82,7 +82,7 @@ export function TeachingLogPage() {
       <div>
         <h1 className="text-xl font-semibold">Teaching Log</h1>
         <p className="text-sm text-muted-foreground">
-          Automatically from course progress — who completed which lesson, when, and the result.
+          Everything from training, by date — lessons taught (steps + completions) and repairs practiced.
         </p>
       </div>
 
@@ -95,7 +95,7 @@ export function TeachingLogPage() {
             </div>
             <div>
               <p className="text-2xl font-semibold leading-none">{stats.total}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Completed lessons</p>
+              <p className="mt-1 text-xs text-muted-foreground">Entries</p>
             </div>
           </CardContent>
         </Card>
@@ -189,11 +189,11 @@ export function TeachingLogPage() {
       ) : rows.length === 0 ? (
         <EmptyState
           icon={<CalendarDays className="size-8" />}
-          title="No completed lessons yet"
+          title="No teaching log entries yet"
           hint={
             hasFilters
               ? "Nothing matches these filters."
-              : "Mark lessons as done in Courses — they appear here automatically."
+              : "Mark lessons in Courses or log repairs — everything appears here automatically."
           }
         />
       ) : (
@@ -222,20 +222,23 @@ export function TeachingLogPage() {
 
                 <ul className="divide-y">
                   {entries.map((e) => (
-                    <li key={`${e.student_id ?? "s"}-${e.item_id ?? "i"}-${e.log_date}`} className="flex items-start justify-between gap-3 py-2.5">
+                    <li key={e.id} className="flex items-start justify-between gap-3 py-2.5">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
+                          {e.kind === "repair" && <Wrench className="size-3.5 shrink-0 text-primary/70" aria-label="Repair" />}
+                          {e.kind === "steps" && <BookOpenCheck className="size-3.5 shrink-0 text-primary/70" aria-label="Steps taught" />}
                           <span className="font-medium">{e.student_name ?? "—"}</span>
                           <span className="text-muted-foreground">→</span>
                           <span className="text-sm">{e.item_title ?? "—"}</span>
+                          {e.kind === "steps" && e.step_names ? (
+                            <span className="text-xs text-muted-foreground">({e.step_names})</span>
+                          ) : null}
                           {e.effect ? (
                             <Badge className={EFFECT_BADGE[e.effect]}>
                               <span className={`mr-1 inline-block size-1.5 rounded-full ${EFFECT_DOT[e.effect]}`} />
                               {EFFECT_LABELS[e.effect]}
                             </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">(no result marked)</span>
-                          )}
+                          ) : null}
                         </div>
                         {e.note && <p className="mt-1 text-sm text-muted-foreground">{e.note}</p>}
                       </div>
