@@ -40,6 +40,7 @@ function CategoryGroup({
   stepDoneByItem,
   stepsByItem,
   stepStudentsByItem,
+  stepCountsByItem,
   lessonDetailsOpen,
   onToggleLessonDetails,
   highlightId,
@@ -60,6 +61,7 @@ function CategoryGroup({
   stepDoneByItem?: Map<number, Set<number>>
   stepsByItem?: Map<number, { total: number; done: number }>
   stepStudentsByItem?: Map<number, Map<number, Array<{ id: number; name: string }>>>
+  stepCountsByItem?: Map<number, Array<{ id: number; name: string; done: number; total: number }>>
   lessonDetailsOpen: Set<number>
   onToggleLessonDetails: (itemId: number) => void
   highlightId: number | null
@@ -147,6 +149,26 @@ function CategoryGroup({
                       </div>
                       {(!hasDetails || lessonDetailsOpen.has(item.id)) && item.practice ? (
                         <span className="block truncate text-xs text-muted-foreground/80">{item.practice}</span>
+                      ) : null}
+                      {hasDetails && stepCountsByItem?.get(item.id)?.length ? (
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                          {stepCountsByItem.get(item.id)!.map((sc) => (
+                            <span
+                              key={sc.id}
+                              title={`${sc.name}: ${sc.done}/${sc.total} steps done`}
+                              className={cn(
+                                "text-[10px] font-semibold tabular-nums",
+                                sc.done >= sc.total && sc.total > 0
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : sc.done > 0
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-muted-foreground",
+                              )}
+                            >
+                              {sc.name} {sc.done}/{sc.total}
+                            </span>
+                          ))}
+                        </span>
                       ) : null}
                       {lessonDetailsOpen.has(item.id) && item.details ? (
                         <ol className="mt-1 space-y-1">
@@ -552,6 +574,52 @@ export function CoursesPage() {
     }
     return map
   }, [selection, allProgress, progress, activeStudents, selectedId])
+
+  // item_id -> per-student detail-step counters { done, total } — shows "Name x/y" on lesson rows.
+  const stepCountsByItem = useMemo(() => {
+    const map = new Map<number, Array<{ id: number; name: string; done: number; total: number }>>()
+    const rowsForStudent = (sid: number, data: Array<{ item_id: number; detail_idx: number | null }> | undefined) => {
+      if (!data) return
+      // Per-item sets of completed step indexes (detail_idx is item-scoped).
+      const perItem = new Map<number, Set<number>>()
+      for (const p of data) {
+        if (p.detail_idx == null) continue
+        const s = perItem.get(p.item_id) ?? new Set<number>()
+        s.add(p.detail_idx)
+        perItem.set(p.item_id, s)
+      }
+      for (const item of items) {
+        const total = (item.details ?? "").split(/\r?\n/).filter(Boolean).length
+        if (total === 0) continue
+        const arr = map.get(item.id) ?? []
+        let entry = arr.find((x) => x.id === sid)
+        if (!entry) {
+          entry = { id: sid, name: "", done: 0, total }
+          arr.push(entry)
+          map.set(item.id, arr)
+        }
+        const set = perItem.get(item.id)
+        entry.done = set ? [...set].filter((d) => d >= 1 && d <= total).length : 0
+      }
+    }
+    if (selection === "all") {
+      activeStudents.forEach((s, i) => {
+        const q = allProgress[i]
+        rowsForStudent(s.id, (q?.data ?? []) as Array<{ item_id: number; detail_idx: number | null }>)
+      })
+    } else {
+      const student = activeStudents.find((s) => s.id === selectedId)
+      if (student) rowsForStudent(student.id, progress ?? [])
+    }
+    for (const arr of map.values()) {
+      arr.forEach((e) => {
+        const st = activeStudents.find((s) => s.id === e.id)
+        if (st) e.name = st.name
+      })
+      arr.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return map
+  }, [selection, allProgress, progress, activeStudents, items, selectedId])
 
   const byType = (type: CurriculumType) =>
     items.filter((i) => i.type === type).sort((a, b) => a.sort_order - b.sort_order)
@@ -982,6 +1050,7 @@ export function CoursesPage() {
                     stepDoneByItem={stepDoneByItem}
                     stepsByItem={stepsByItem}
                     stepStudentsByItem={stepStudentsByItem}
+                    stepCountsByItem={stepCountsByItem}
                     lessonDetailsOpen={lessonDetailsOpen}
                     onToggleLessonDetails={toggleLessonDetails}
                     highlightId={highlightId}
