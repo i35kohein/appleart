@@ -222,7 +222,7 @@ export function TeachingLogPage() {
 
                 <ul className="divide-y">
                   {entries.map((e) => (
-                    <li key={e.id} className="flex items-start justify-between gap-3 py-2.5">
+                    <li key={`${e.student_id ?? "s"}-${e.item_id ?? "i"}-${e.log_date}`} className="flex items-start justify-between gap-3 py-2.5">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{e.student_name ?? "—"}</span>
