@@ -349,7 +349,7 @@ export function TeachingLogPage() {
         <EmptyState
           icon={<CalendarDays className="size-8" />}
           title="No teaching logs yet"
-          description={
+          hint={
             hasFilters
               ? "Nothing matches these filters."
               : "Log your first session — pick a trainee, lesson and effect."

@@ -46,10 +46,18 @@ export function useTeachingLog(filters: TeachingLogFilters) {
 }
 
 export interface TeachingLogInput {
-  log_date: string
-  student_id: number | null
-  item_id: number | null
-  effect: TeachingEffect
+  log_date?: string
+  student_id?: number | null
+  item_id?: number | null
+  effect?: TeachingEffect
+  note?: string
+}
+
+export interface TeachingLogInput {
+  log_date?: string
+  student_id?: number | null
+  item_id?: number | null
+  effect?: TeachingEffect
   note?: string
 }
 
@@ -58,7 +66,7 @@ export function useSaveTeachingLog() {
   const { toast } = useToast()
   return useMutation({
     mutationFn: (fields: { action: "add" | "delete"; id?: number } & TeachingLogInput) =>
-      apiPostForm<{ status: string }>("/save_teaching_log.php", fields as Record<string, string | number>),
+      apiPostForm<{ status: string }>("/save_teaching_log.php", fields as unknown as Record<string, string | number>),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["teaching-log"] })
       qc.invalidateQueries({ queryKey: ["today"] })
