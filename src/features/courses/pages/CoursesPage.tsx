@@ -94,6 +94,13 @@ function CategoryGroup({
               const stepDone = stepSet ?? new Set<number>()
               const stepDoneCount = steps?.done ?? 0
               const stepTotal = steps?.total ?? 0
+              // Students who completed the WHOLE lesson (all detail steps, or lesson-level Completed).
+              const lessonDoneIds = new Set<number>()
+              for (const sc of stepCountsByItem?.get(item.id) ?? []) {
+                if (sc.total > 0 && sc.done >= sc.total) lessonDoneIds.add(sc.id)
+              }
+              for (const s of completedByItem?.get(item.id) ?? []) lessonDoneIds.add(s.id)
+              const lessonDoneStudents = lessonDoneIds.size
               // Students who have completed ALL detail steps (ready for Mark done).
               const stepSets = (stepStudentsByItem?.get(item.id) ?? new Map<number, Array<{ id: number; name: string }>>())
               const readyStudentCount = stepTotal > 0 && stepSets.size > 0
@@ -144,6 +151,17 @@ function CategoryGroup({
                                 {s.name}
                               </span>
                             ))}
+                            {scopeCount > 1 && (
+                              <span
+                                title={`${doneCount} of ${scopeCount} active students completed`}
+                                className={cn(
+                                  "text-[10px] font-semibold tabular-nums",
+                                  doneCount >= scopeCount ? "text-emerald-600 dark:text-emerald-400" : doneCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                                )}
+                              >
+                                {doneCount}/{scopeCount}
+                              </span>
+                            )}
                           </span>
                         ) : null}
                       </div>
@@ -199,6 +217,19 @@ function CategoryGroup({
                                         {st.name}
                                       </span>
                                     ))}
+                                    {scopeCount > 1 && (
+                                      <span
+                                        title={`${stepStudentsByItem.get(item.id)!.get(idx)!.length} of ${scopeCount} active students did this step`}
+                                        className={cn(
+                                          "text-[10px] font-semibold tabular-nums",
+                                          stepStudentsByItem.get(item.id)!.get(idx)!.length >= scopeCount
+                                            ? "text-emerald-600 dark:text-emerald-400"
+                                            : "text-amber-600 dark:text-amber-400",
+                                        )}
+                                      >
+                                        {stepStudentsByItem.get(item.id)!.get(idx)!.length}/{scopeCount}
+                                      </span>
+                                    )}
                                   </span>
                                 ) : null}
                               </li>
@@ -234,8 +265,18 @@ function CategoryGroup({
                     {hasDetails ? (
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <MaterialControls itemId={item.id} itemTitle={item.title} materials={item.materials} hideUpload />
-                        <span className="text-[10px] font-semibold text-muted-foreground">
-                          {stepDoneCount}/{stepTotal} steps
+                        <span
+                          title={`${lessonDoneStudents} of ${scopeCount} active students completed this lesson`}
+                          className={cn(
+                            "text-[10px] font-semibold tabular-nums",
+                            lessonDoneStudents >= scopeCount && scopeCount > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : lessonDoneStudents > 0
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground",
+                          )}
+                        >
+                          {lessonDoneStudents}/{scopeCount} students
                         </span>
                         <Button
                           size="sm"
